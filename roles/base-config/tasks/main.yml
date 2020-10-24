@@ -1,0 +1,91 @@
+---
+          - name: Instalacao do NTP, Vim, Build Essential e copia dos arquivos de configuracao
+            apt:
+                    name: '{{ item }}'
+                    update_cache: yes
+                    state: present
+            with_items:
+                    - ntp
+                    - vim
+                      #          - build-essential
+
+          - name: Copia arquivos de configuracao
+            copy:
+                   src: '{{ item.src }}'
+                   dest: '{{ item.dest }}'
+            with_items:
+                           - { src: '/etc/ansible/roles/base-config/files/ntp.conf', dest: '/etc/ntp.conf' }
+                           - { src: '/etc/ansible/roles/base-config/files/vimrc', dest: '/etc/vim/vimrc' }
+                           - { src: '/etc/ansible/roles/base-config/files/vimrc.local', dest: '/etc/vim/vimrc.local' }
+                           - { src: '/etc/ansible/roles/base-config/files/bash.bashrc', dest: '/etc/bash.bashrc' }
+
+          - name: Instala SEGPLAN CA
+            file:
+                    path: /usr/local/share/ca-certificates/extras
+                    state: directory
+            when:
+               - ansible_distribution == "Debian"
+          
+
+                             # - name: Copia wgetrc quando estiver na rede do Universitario
+            # copy:
+                    # src: '/etc/ansible/roles/base-config/files/wgetrc'
+                    # dest: '/etc'
+            #when: ansible_default_ipv4['network'] == "10.207.0.0"
+
+          - name: Atualiza /etc/environment no Debian 10
+            copy:
+                    src: '/etc/ansible/roles/base-config/files/environment'
+                    dest: '/etc'
+                    owner: root
+                    group: root
+                    mode: 0644
+            when:  
+               - ansible_distribution == "Debian"
+               - ansible_distribution_major_version == "10"
+
+          - name: Reinicia servidor para recarregar configurações do comando acima
+            command: reboot
+            async: 1
+            poll: 0
+            when:
+               - ansible_distribution == "Debian"
+               - ansible_distribution_major_version == "10"
+
+          - name: Aguarda finalizacao do reboot
+            wait_for_connection:
+                    connect_timeout: 20
+                    sleep: 5
+                    delay: 5
+                    timeout: 300
+            when:
+               - ansible_distribution == "Debian"
+               - ansible_distribution_major_version == "10"
+
+                 # - name: Extrai VMwareTools Universitario
+            #            unarchive:
+                    #   src: '{{ item }}'
+                    #  dest: '/tmp'
+                    #            with_fileglob:
+                    # - '/etc/ansible/roles/base-config/files/VMwareTools-10.3.22-15902021.tar.gz.tar.gz'
+                      #            when: ansible_default_ipv4['netmask'] == "255.255.0.0"
+
+          - name: Extrai VMwareTools STI
+            unarchive:
+                    src: '{{ item }}'
+                    dest: '/tmp'
+            with_fileglob:
+                    - '/etc/ansible/roles/base-config/files/VMwareTools-10.3.21-14772444.tar.gz'
+            when: ansible_default_ipv4['netmask'] == "255.255.255.192"
+
+          - name: Executa instalacao VMwareTools
+            command: /tmp/vmware-tools-distrib/vmware-install.pl -d -f
+
+          - name: Limpar arquivos VMwareTools
+            file:
+                    path: '{{ item }}'
+                    state: absent
+            with_items:
+                    - '/tmp/vmware-tools-distrib/'
+
+...

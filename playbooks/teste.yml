@@ -1,0 +1,16 @@
+---
+- name: Instalacao do JDK8 e Tomcat 8
+  hosts: newservers
+  remote_user: secimaadmin
+  become: yes
+  tasks:
+          - name: Altera owner do tomcat recursivamente
+            file:
+                    path: /opt/tomcat
+                    state: link
+                    owner: tomcat
+                    group: tomcat
+                    recurse: yes
+
+
+...

@@ -1,0 +1,8 @@
+---
+- name: Instalação de pacotes e configurações básicas do SO
+  hosts: newservers
+  remote_user: secimaadmin
+  become: yes
+  roles:
+        - base-config
+...

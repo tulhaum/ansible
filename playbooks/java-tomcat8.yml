@@ -1,0 +1,8 @@
+---
+- name: Instalacao do JDK8 e Tomcat 8
+  hosts: newservers
+  remote_user: secimaadmin
+  become: yes
+  roles:
+          - java8-tomcat8
+...

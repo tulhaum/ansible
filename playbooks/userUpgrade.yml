@@ -1,0 +1,20 @@
+---
+- name: Cria user operador, seta senha e home
+  hosts: devops
+  remote_user: secimaadmin
+  become: yes
+  tasks:
+          - name: Cria user operador
+            user:
+                    name: operador
+                    shell: /bin/bash
+                    createhome: no
+                    password: $6$8EHyPJqfbtI3$lDkQefe64Rd5cSGe8bfAFAy.gWcuMt1hzxQQjbNPV8yG27pApc9V/5E5qs5ee3ixh9fcVjXlFDWQVaPDntM99/
+                    groups: cdrom,audio,dip,floppy,video,plugdev,netdev,ssl-cert 
+
+                    #          - name: Set authorized key taken from file
+                    #            authorized_key:
+                    #                    user: operador
+                    #                    state: present
+                    #                    key: "{{ lookup('file', '/etc/keys/key.pem.pub') }}"
+...

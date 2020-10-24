@@ -1,0 +1,128 @@
+---
+- name: Extrai Tomcat 8.5.32 e JDK 8u172
+  unarchive:
+          src: '{{ item }}'
+          dest: '/opt'
+  with_items:
+          - '/etc/ansible/roles/java8-tomcat8/files/apache-tomcat-8.5.32.tar.gz'
+          - '/etc/ansible/roles/java8-tomcat8/files/jdk-8u172-linux-x64.tar.gz'
+
+- name: Cria symlink para Java e Tomcat
+  file:
+          src: '{{ item.src }}'
+          dest: '{{ item.dest }}'
+          state: link
+  with_items:
+          - { src: '/opt/apache-tomcat-8.5.32/', dest: '/opt/tomcat' }
+          - { src: '/opt/jdk1.8.0_172/', dest: '/opt/java' }
+
+- name: Copia script de inicializacao Tomcat
+  copy:
+          src: '/etc/ansible/roles/java8-tomcat8/files/tomcat'
+          dest: '/etc/init.d/'
+          mode: 0755
+
+- name: Cria grupo tomcat
+  group:
+          name: tomcat
+          state: present
+
+- name: Cria usuario tomcat          
+  user:
+          name: tomcat
+          group: tomcat
+          shell: /usr/sbin/nologin
+          home: /opt/tomcat
+
+- name: Cria diretorio de arquivos ssl do Tomcat
+  file:
+          path: /opt/tomcat/ssl
+          state: directory
+          mode: 0750
+
+- name: cria certificados ssl para tomcat
+  shell: '{{ item }}'
+  args:
+          chdir: /opt/tomcat/ssl
+  with_items:
+          - /opt/java/bin/keytool -genkey -noprompt -keyalg RSA -alias selfsigned -dname CN=app,OU=GPTI,O=SEMAD,L=Goiania,S=Goias,C=BR -keystore keystore.jks -storepass "!r00tsecima*" -keypass "!r00tsecima*" -validity 30000 -keysize 2048
+          - /opt/java/bin/keytool -importkeystore -srckeystore keystore.jks -srcstorepass "!r00tsecima*" -destkeystore keystore.jks -deststoretype pkcs12
+
+- name: Altera permissão da pasta /opt/tomcat/webapps para 775
+  file:
+          path: /opt/tomcat/webapps
+          mode: 0775
+
+- name: Copia catalina.sh, server.xml, tomcat-users.xml e probe.war
+  copy:
+          src: '{{ item.src }}'
+          dest: '{{ item.dest }}'
+  with_items:
+          - { src: '/etc/ansible/roles/java8-tomcat8/files/catalina.sh', dest: '/opt/tomcat/bin' }
+          - { src: '/etc/ansible/roles/java8-tomcat8/files/server.xml', dest: '/opt/tomcat/conf' }
+          - { src: '/etc/ansible/roles/java8-tomcat8/files/tomcat-users.xml', dest: '/opt/tomcat/conf' }
+          - { src: '/etc/ansible/roles/java8-tomcat8/files/probe.war', dest: '/opt/tomcat/webapps' }
+          - { src: '/etc/ansible/roles/java8-tomcat8/files/postgresql-42.2.4.jar', dest: '/opt/tomcat/lib' }
+          - { src: '/etc/ansible/roles/java8-tomcat8/files/tomcat.service', dest: '/etc/systemd/system' }
+
+- name: Altera owner do tomcat recursivamente
+  file:
+          path: /opt/apache-tomcat-8.5.32
+          state: directory
+          owner: tomcat
+          group: tomcat
+          recurse: yes
+
+- name: Altera group do java recursivamente
+  file:
+          path: /opt/jdk1.8.0_172/
+          state: directory
+          owner: tomcat
+          group: tomcat
+          recurse: yes
+
+- name: Inicializacao automatica do Tomcat
+  shell: '{{ item }}'
+  with_items:
+          #          - update-rc.d tomcat defaults
+          - systemctl enable tomcat.service
+
+- name: Instala sudo
+  apt:
+          name: sudo
+          update_cache: yes
+          state: present
+
+- name: Inclui usuario secimaadmin ao grupo tomcat
+  user:
+          name: secimaadmin
+          groups: tomcat
+          append: yes
+
+- name: Remove arquivos desnecessarios do Tomcat
+  file:
+          path: '{{ item }}'
+          state: absent
+  with_items:
+          - '/opt/tomcat/LICENSE'
+          - '/opt/tomcat/NOTICE'
+          - '/opt/tomcat/RUNNING.txt'
+          - '/opt/tomcat/RELEASE-NOTES'
+          - '/opt/tomcat/webapps/ROOT'
+          - '/opt/tomcat/webapps/docs'
+          - '/opt/tomcat/webapps/examples'
+          - '/opt/tomcat/webapps/host-manager'
+          - '/opt/tomcat/webapps/manager'
+
+- name: Adiciona usuario secimaadmin no sudoers
+  lineinfile:
+          dest: /etc/sudoers
+          state: present
+          regexp: '^secimaadmin'
+          line: 'secimaadmin ALL=NOPASSWD:/bin/rm,/usr/bin/scp'
+          validate: 'visudo -cf %s'
+
+- name: Reinicia servidor
+  shell: shutdown -r now
+
+...

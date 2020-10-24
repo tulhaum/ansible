@@ -1,0 +1,16 @@
+---
+- name: Cria user operador, seta senha e home
+  hosts: devops
+  remote_user: operador
+  become: yes
+  tasks:
+          - name: Move o home
+            command: usermod -d /home/operador -m secimaadmin
+
+          - name: Set authorized key taken from file
+            authorized_key:
+                    user: operador
+                    state: present
+                    key: "{{ lookup('file', '/etc/keys/key.pem.pub') }}"
+
+...

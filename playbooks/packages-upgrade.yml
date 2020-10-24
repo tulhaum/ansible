@@ -1,0 +1,8 @@
+---
+- name: Atualizacao de pacotes
+  hosts: all
+  remote_user: secimaadmin
+  become: yes
+  roles:
+        - packages-upgrade
+...
