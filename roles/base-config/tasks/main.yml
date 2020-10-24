@@ -1,4 +1,19 @@
 ---
+          - name: Adiciona repositorio buster-backports
+            apt_repository:
+                    repo: deb http://ftp.br.debian.org/debian/ buster-backports main contrib non-free
+                    state: present
+            when:
+               - ansible_distribution == "Debian"
+               - ansible_distribution_major_version == "10"
+
+          - name: Instala open-vm-tools 11 do repositorio backports
+            apt:
+                    name: open-vm-tools
+                    state: latest
+                    default_release: buster-backports
+                    update_cache: yes
+
           - name: Instalacao do NTP, Vim, Build Essential e copia dos arquivos de configuracao
             apt:
                     name: '{{ item }}'

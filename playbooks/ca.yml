@@ -6,28 +6,31 @@
   vars:
           ca_path_debian: /usr/local/share/ca-certificates
           ca_path_centos: /etc/pki/ca-trust/source/anchors
+          ca_path:
+            CentOS:
+                    '{{ca_path_centos}}'
+            Debian:
+                    '{{ca_path_debian}}'
   tasks:
-          - name: Cria diretorio
-            file:
-                    path: /usr/local/share/ca-certificates/extras
-                    state: directory
-             when:
-               - ansible_distribution == "Debian"
 
           - name: Copia certificado SEGPLANCAnew.crt
             copy:
                     src: '/etc/ansible/roles/base-config/files/SEGPLANCAnew.crt'
-                    dest: '/usr/local/share/ca-certificates/extras'
+                    dest: '{{ca_path[ansible_distribution]}}'
 
-            when:
-               - ansible_distribution == "Debian"
 
-          - name: Atualiza certificados e importa SEGPLANCAnew
+          - name: Importa SEGPLANCAnew Debian
             shell: /usr/sbin/update-ca-certificates
             
             when:
                - ansible_distribution == "Debian"
 
+          - name: Importa SEGPLANCAnew CentOS
+            shell: /bin/update-ca-trust enable
+            shell: /bin/update-ca-trust extract
+            shell: /bin/update-ca-trust
 
+            when:
+               - ansible_distribution == "CentOS"
 
 ...

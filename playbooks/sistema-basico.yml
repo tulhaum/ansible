@@ -3,6 +3,15 @@
   hosts: newservers
   remote_user: secimaadmin
   become: yes
+  vars:
+          ca_path_debian: /usr/local/share/ca-certificates
+          ca_path_centos: /etc/pki/ca-trust/source/anchors
+          ca_path:
+            CentOS:
+                    '{{ca_path_centos}}'
+            Debian:
+                    '{{ca_path_debian}}'
+
   roles:
         - base-config
 ...

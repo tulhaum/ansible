@@ -28,8 +28,10 @@
 
 [teste]
 10.207.30.12
+10.207.30.14
 
-[novos]
+[centos]
+10.207.30.14
 
 #alpha.example.org
 #beta.example.org
