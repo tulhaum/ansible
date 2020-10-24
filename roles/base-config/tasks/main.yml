@@ -7,7 +7,7 @@
             with_items:
                     - ntp
                     - vim
-                      #          - build-essential
+                    - ca-certificates
 
           - name: Copia arquivos de configuracao
             copy:
@@ -18,20 +18,6 @@
                            - { src: '/etc/ansible/roles/base-config/files/vimrc', dest: '/etc/vim/vimrc' }
                            - { src: '/etc/ansible/roles/base-config/files/vimrc.local', dest: '/etc/vim/vimrc.local' }
                            - { src: '/etc/ansible/roles/base-config/files/bash.bashrc', dest: '/etc/bash.bashrc' }
-
-          - name: Instala SEGPLAN CA
-            file:
-                    path: /usr/local/share/ca-certificates/extras
-                    state: directory
-            when:
-               - ansible_distribution == "Debian"
-          
-
-                             # - name: Copia wgetrc quando estiver na rede do Universitario
-            # copy:
-                    # src: '/etc/ansible/roles/base-config/files/wgetrc'
-                    # dest: '/etc'
-            #when: ansible_default_ipv4['network'] == "10.207.0.0"
 
           - name: Atualiza /etc/environment no Debian 10
             copy:
@@ -62,13 +48,22 @@
                - ansible_distribution == "Debian"
                - ansible_distribution_major_version == "10"
 
-                 # - name: Extrai VMwareTools Universitario
-            #            unarchive:
-                    #   src: '{{ item }}'
-                    #  dest: '/tmp'
-                    #            with_fileglob:
-                    # - '/etc/ansible/roles/base-config/files/VMwareTools-10.3.22-15902021.tar.gz.tar.gz'
-                      #            when: ansible_default_ipv4['netmask'] == "255.255.0.0"
+          - name: Copia certificado SEGPLANCAnew.crt
+            copy:
+                    src: '/etc/ansible/roles/base-config/files/SEGPLANCAnew.crt'
+                    dest: '{{ca_path[ansible_distribution]}}'
+
+          - name: Importa SEGPLANCAnew Debian
+            shell: /usr/sbin/update-ca-certificates
+            when:
+               - ansible_distribution == "Debian"
+                 
+          - name: Importa SEGPLANCAnew CentOS
+            shell: /bin/update-ca-trust enable
+            shell: /bin/update-ca-trust extract
+            shell: /bin/update-ca-trust
+            when:
+               - ansible_distribution == "CentOS"
 
           - name: Extrai VMwareTools STI
             unarchive:
