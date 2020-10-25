@@ -1,6 +1,6 @@
 ---
 - name: Teste CA
-  hosts: teste
+  hosts: proxy_reverso
   remote_user: secimaadmin
   become: yes
   vars:
@@ -32,5 +32,20 @@
 
             when:
                - ansible_distribution == "CentOS"
+
+          - name: atualiza wget
+            copy:
+                    src: '/etc/ansible/roles/base-config/files/wgetrc'
+                    dest: '/etc'
+                    owner: root
+                    group: root
+                    mode: 0644
+
+          - name: atualiza apt-get
+            file:
+                    path: /etc/apt/apt.conf
+                    state: absent
+            when:
+                    - ansible_distribution == "Debian"
 
 ...

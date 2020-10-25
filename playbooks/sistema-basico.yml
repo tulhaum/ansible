@@ -12,6 +12,12 @@
             Debian:
                     '{{ca_path_debian}}'
 
+          ntp:
+                  CentOS:
+                          chrony
+                  Debian:
+                          ntp
+
   roles:
         - base-config
 ...

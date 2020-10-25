@@ -22,6 +22,28 @@
             when:
                     - ansible_distribution == "Debian"
 
+          - name: Instala open-vm-tools CentOS
+            yum:
+                    name: open-vm-tools
+                    state: latest
+
+          - name: Copia certificado SEGPLANCAnew.crt
+            copy:
+                    src: '/etc/ansible/roles/base-config/files/SEGPLANCAnew.crt'
+                    dest: '{{ca_path[ansible_distribution]}}'
+
+          - name: Importa SEGPLANCAnew Debian
+            shell: /usr/sbin/update-ca-certificates
+            when:
+                    - ansible_distribution == "Debian"
+                      
+          - name: Importa SEGPLANCAnew CentOS
+            shell: /bin/update-ca-trust enable
+            shell: /bin/update-ca-trust extract
+            shell: /bin/update-ca-trust
+            when:
+                    - ansible_distribution == "CentOS"
+
           - name: Instalacao do NTP, Vim, CA-Certificates
             package:
                     name:
@@ -42,6 +64,13 @@
             when:
                     - ansible_distribution == "Debian"
 
+          - name: SELinux permissivo
+            selinux:
+                    policy: targeted
+                    state: permissive
+            when:
+                    - ansible_distribution == "CentOS"
+                      
           - name: Desabilita SELinux CentOS
             selinux:
                     state: disabled
@@ -59,9 +88,37 @@
           - name: Habilitar repositorio EPEL no CentOS
             dnf:
                     name: epel-release
-                    state: lastest
+                    state: latest
             when:
                     - ansible_distribution == "CentOS"
+
+          - name: Configura chrony CentOS
+            copy:
+                    src: '/etc/ansible/roles/base-config/files/chrony.conf'
+                    dest: '/etc'
+                    owner: root
+                    group: root
+                    mode: 0644
+            when:
+                    - ansible_distribution == "CentOS"
+            notify: ntp_centos
+
+          - name: Habilita chronyd e open-vm-tools CentOS
+            systemd:
+                    name: chronyd
+                    enabled: yes
+            when:
+                    - ansible_distribution == "CentOS"
+
+          - name: Habilita vmtoolsd CentOS
+            systemd:
+                    name: vmtoolsd
+                    enabled: yes
+            when:
+                    - ansible_distribution == "CentOS"
+
+          - name: Flush handlers centos
+            meta: flush_handlers
 
           - name: Atualiza todos os pacotes CentOS
             yum:
@@ -81,42 +138,4 @@
                - ansible_distribution == "Debian"
                - ansible_distribution_major_version == "10"
             notify: environment
-
-          - name: Flush handlers
-            meta: flush_handlers
-
-          - name: Copia certificado SEGPLANCAnew.crt
-            copy:
-                    src: '/etc/ansible/roles/base-config/files/SEGPLANCAnew.crt'
-                    dest: '{{ca_path[ansible_distribution]}}'
-
-          - name: Importa SEGPLANCAnew Debian
-            shell: /usr/sbin/update-ca-certificates
-            when:
-               - ansible_distribution == "Debian"
-                 
-          - name: Importa SEGPLANCAnew CentOS
-            shell: /bin/update-ca-trust enable
-            shell: /bin/update-ca-trust extract
-            shell: /bin/update-ca-trust
-            when:
-               - ansible_distribution == "CentOS"
-
-          - name: Configura chrony CentOS
-            copy:
-                    src: '/etc/ansible/roles/base-config/files/chrony.conf'
-                    dest: '/etc'
-                    owner: root
-                    group: root
-                    mode: 0644
-            when:
-                    - ansible_distribution == "CentOS"
-            notify: ntp_centos
-
-          - name: Habilita chronyd CentOS
-            systemd:
-                    name: chronyd
-                    enabled: yes
-            when:
-                    - ansible_distribution == "CentOS"
 ...
