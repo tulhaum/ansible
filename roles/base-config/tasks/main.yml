@@ -7,6 +7,10 @@
                - ansible_distribution == "Debian"
                - ansible_distribution_major_version == "10"
 
+          - name: Atualiza distribuicao
+            apt:
+                    upgrade: yes       
+
           - name: Instala open-vm-tools 11 do repositorio backports
             apt:
                     name: open-vm-tools
@@ -14,15 +18,15 @@
                     default_release: buster-backports
                     update_cache: yes
 
-          - name: Instalacao do NTP, Vim, Build Essential e copia dos arquivos de configuracao
+          - name: Instalacao do NTP, Vim, CA-Certificates e copia dos arquivos de configuracao
             apt:
-                    name: '{{ item }}'
+                    name:
+                            - ntp
+                            - vim
+                            - ca-certificates
+
                     update_cache: yes
                     state: present
-            with_items:
-                    - ntp
-                    - vim
-                    - ca-certificates
 
           - name: Copia arquivos de configuracao
             copy:
@@ -44,24 +48,28 @@
             when:  
                - ansible_distribution == "Debian"
                - ansible_distribution_major_version == "10"
+            notify: environment
 
-          - name: Reinicia servidor para recarregar configurações do comando acima
-            command: reboot
-            async: 1
-            poll: 0
-            when:
-               - ansible_distribution == "Debian"
-               - ansible_distribution_major_version == "10"
+          - name: Flush handlers
+            meta: flush_handlers
 
-          - name: Aguarda finalizacao do reboot
-            wait_for_connection:
-                    connect_timeout: 20
-                    sleep: 5
-                    delay: 5
-                    timeout: 300
-            when:
-               - ansible_distribution == "Debian"
-               - ansible_distribution_major_version == "10"
+            #          - name: Reinicia servidor para recarregar configurações do comando acima
+            #   command: reboot
+            # async: 1
+            # poll: 0
+            # when:
+            #    - ansible_distribution == "Debian"
+            #    - ansible_distribution_major_version == "10"
+
+            #  - name: Aguarda finalizacao do reboot
+            #  wait_for_connection:
+            #        connect_timeout: 20
+            #        sleep: 5
+            #        delay: 5
+            #         timeout: 300
+            #  when:
+            #   - ansible_distribution == "Debian"
+            #    - ansible_distribution_major_version == "10"
 
           - name: Copia certificado SEGPLANCAnew.crt
             copy:
@@ -90,6 +98,7 @@
 
           - name: Executa instalacao VMwareTools
             command: /tmp/vmware-tools-distrib/vmware-install.pl -d -f
+            when: ansible_default_ipv4['netmask'] == "255.255.255.192"
 
           - name: Limpar arquivos VMwareTools
             file:
@@ -97,5 +106,6 @@
                     state: absent
             with_items:
                     - '/tmp/vmware-tools-distrib/'
+            when: ansible_default_ipv4['netmask'] == "255.255.255.192"
 
 ...
