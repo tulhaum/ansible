@@ -10,6 +10,8 @@
           - name: Atualiza distribuicao
             apt:
                     upgrade: yes       
+            when:
+                    - ansible_distribution == "Debian"
 
           - name: Instala open-vm-tools 11 do repositorio backports
             apt:
@@ -17,15 +19,15 @@
                     state: latest
                     default_release: buster-backports
                     update_cache: yes
+            when:
+                    - ansible_distribution == "Debian"
 
-          - name: Instalacao do NTP, Vim, CA-Certificates e copia dos arquivos de configuracao
-            apt:
+          - name: Instalacao do NTP, Vim, CA-Certificates
+            package:
                     name:
-                            - ntp
+                            - '{{ntp[ansible_distribution]}}'
                             - vim
                             - ca-certificates
-
-                    update_cache: yes
                     state: present
 
           - name: Copia arquivos de configuracao
@@ -37,6 +39,36 @@
                            - { src: '/etc/ansible/roles/base-config/files/vimrc', dest: '/etc/vim/vimrc' }
                            - { src: '/etc/ansible/roles/base-config/files/vimrc.local', dest: '/etc/vim/vimrc.local' }
                            - { src: '/etc/ansible/roles/base-config/files/bash.bashrc', dest: '/etc/bash.bashrc' }
+            when:
+                    - ansible_distribution == "Debian"
+
+          - name: Desabilita SELinux CentOS
+            selinux:
+                    state: disabled
+            when:
+                    - ansible_distribution == "CentOS"
+
+          - name: Desabilita firewall CentOS
+            service:
+                    name: firewalld
+                    state: stopped
+                    enabled: false
+            when:
+                    - ansible_distribution == "CentOS"
+
+          - name: Habilitar repositorio EPEL no CentOS
+            dnf:
+                    name: epel-release
+                    state: lastest
+            when:
+                    - ansible_distribution == "CentOS"
+
+          - name: Atualiza todos os pacotes CentOS
+            yum:
+                    name: '*'
+                    state: latest
+            when:
+                    - ansible_distribution == "CentOS"
 
           - name: Atualiza /etc/environment no Debian 10
             copy:
@@ -69,4 +101,22 @@
             shell: /bin/update-ca-trust
             when:
                - ansible_distribution == "CentOS"
+
+          - name: Configura chrony CentOS
+            copy:
+                    src: '/etc/ansible/roles/base-config/files/chrony.conf'
+                    dest: '/etc'
+                    owner: root
+                    group: root
+                    mode: 0644
+            when:
+                    - ansible_distribution == "CentOS"
+            notify: ntp_centos
+
+          - name: Habilita chronyd CentOS
+            systemd:
+                    name: chronyd
+                    enabled: yes
+            when:
+                    - ansible_distribution == "CentOS"
 ...

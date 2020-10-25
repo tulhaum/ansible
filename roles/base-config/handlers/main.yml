@@ -10,4 +10,7 @@
             timeout: 300
             name: environment
             state: changed
+
+  - name: ntp_centos
+    reboot:
 ...
